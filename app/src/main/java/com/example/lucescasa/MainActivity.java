@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private boolean isDay = true;
     private RequestQueue rQueue;
     private Button btn;
+    protected String IoKey = "aio_uAxe358mp6LuC6sBJdFJ9Bz6XH5Q";
     String adafruitURL = "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion/data";
     boolean status = true;
     String estadoFoco;
@@ -51,15 +52,7 @@ public class MainActivity extends AppCompatActivity {
         toggleButton = findViewById(R.id.toggleButton);
         rQueue = Volley.newRequestQueue(this);
         getLastDataFeedIluminacion();
-        /*
-        btn = findViewById(R.id.button);
-        btn.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                requestQue(status,btn);
-            }
-        });
-        */
+    
     }
 
     public void getLastDataFeedIluminacion(){
@@ -91,7 +84,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Map<String,String> getHeaders(){
                 Map<String,String> headers = new HashMap<>();
-                headers.put("X-AIO-Key","aio_OmFm05QNZnpqTH5DjLVLOwC1LoMz");
+                headers.put("X-AIO-Key",IoKey);
                 return headers;
             }
         };
@@ -162,7 +155,7 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public Map<String, String> getHeaders() {
                 Map<String, String> headers = new HashMap<>();
-                headers.put("X-AIO-Key", "aio_OmFm05QNZnpqTH5DjLVLOwC1LoMz");
+                headers.put("X-AIO-Key", IoKey);
                 return headers;
             }
         };
