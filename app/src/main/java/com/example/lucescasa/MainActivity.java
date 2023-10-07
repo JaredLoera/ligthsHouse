@@ -8,6 +8,7 @@ import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 
+
 import android.animation.ObjectAnimator;
 
 import com.android.volley.Request;
@@ -17,12 +18,14 @@ import com.android.volley.VolleyError;
 import com.android.volley.toolbox.JsonObjectRequest;
 import com.android.volley.toolbox.Volley;
 
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Properties;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
@@ -33,12 +36,13 @@ import android.widget.Toast;
 
 public class MainActivity extends AppCompatActivity {
 
+
     private ImageView dayNightImageView;
     private Button toggleButton;
     private boolean isDay = true;
     private RequestQueue rQueue;
     private Button btn;
-    protected String IoKey = "aio_uAxe358mp6LuC6sBJdFJ9Bz6XH5Q";
+    protected String IoKey ;
     String adafruitURL = "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion/data";
     boolean status = true;
     String estadoFoco;
@@ -47,9 +51,13 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        ApiKeyManager keysData = new ApiKeyManager();
+
+        IoKey = keysData.getApiKey();
 
         dayNightImageView = findViewById(R.id.dayNightImageView);
         toggleButton = findViewById(R.id.toggleButton);
+
         rQueue = Volley.newRequestQueue(this);
         getLastDataFeedIluminacion();
     
