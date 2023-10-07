@@ -2,15 +2,10 @@ package com.example.lucescasa;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import android.app.DownloadManager;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.View;
+import android.view.animation.ScaleAnimation;
 import android.widget.Button;
-
-
-import android.animation.ObjectAnimator;
-
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -24,24 +19,17 @@ import org.json.JSONObject;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
-import java.util.Properties;
 
 import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
-import android.widget.Button;
 import android.widget.ImageView;
-import android.widget.Toast;
-
+import android.view.animation.DecelerateInterpolator;
 
 public class MainActivity extends AppCompatActivity {
-
-
-    private ImageView dayNightImageView;
+    private ImageView dayNightImageView, dayNightImageViewBG;
     private Button toggleButton;
     private boolean isDay = true;
     private RequestQueue rQueue;
-    private Button btn;
     protected String IoKey ;
     String adafruitURL = "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion/data";
     boolean status = true;
@@ -57,6 +45,7 @@ public class MainActivity extends AppCompatActivity {
 
         dayNightImageView = findViewById(R.id.dayNightImageView);
         toggleButton = findViewById(R.id.toggleButton);
+        dayNightImageViewBG = findViewById(R.id.backgroundImageView);
 
         rQueue = Volley.newRequestQueue(this);
         getLastDataFeedIluminacion();
@@ -77,6 +66,7 @@ public class MainActivity extends AppCompatActivity {
                         status = false;
                         toggleButton.setText("Apagado");
                         dayNightImageView.setImageResource(R.drawable.moon);
+                        dayNightImageViewBG.setImageResource(R.drawable._761719);
                         isDay = false;
                     }
                 }catch (JSONException error){
@@ -98,6 +88,38 @@ public class MainActivity extends AppCompatActivity {
         };
         rQueue.add(request);
     }
+    public  void dayNaghtBG(View view){
+        float currentAlphaBG = dayNightImageViewBG.getAlpha();
+        float targetAlphaBG = (currentAlphaBG == 1) ? 0 : 1;
+        Animation animationBG = new AlphaAnimation(currentAlphaBG, targetAlphaBG);
+        animationBG.setDuration(2000);
+        animationBG.setAnimationListener(new Animation.AnimationListener() {
+            @Override
+            public void onAnimationStart(Animation animation) {
+
+            }
+
+            @Override
+            public void onAnimationEnd(Animation animation) {
+                if(!isDay){
+                    dayNightImageViewBG.setImageResource(R.drawable._761719);
+                }
+                else{
+                    dayNightImageViewBG.setImageResource(R.drawable.cartoon_cloud_sky_background_1_cover);
+                }
+                Animation fadeInAnimationBG = new AlphaAnimation(0.0f, 1.0f);
+                fadeInAnimationBG.setDuration(1500); // Duración de la animación de aparición
+                fadeInAnimationBG.setInterpolator(new DecelerateInterpolator());
+                dayNightImageView.startAnimation(fadeInAnimationBG);
+            }
+
+            @Override
+            public void onAnimationRepeat(Animation animation) {
+
+            }
+        });
+        dayNightImageViewBG.startAnimation(animationBG);
+    }
     public void  toggleDayNight (View view){
         float currentAlpha = dayNightImageView.getAlpha();
         float targetAlpha = (currentAlpha == 1) ? 0 : 1;
@@ -108,20 +130,27 @@ public class MainActivity extends AppCompatActivity {
         animation.setAnimationListener(new Animation.AnimationListener() {
             @Override
             public void onAnimationStart(Animation animation) {
+                dayNaghtBG(view);
                 requestQue(status);
+                toggleButton.setEnabled(false);
             }
 
             @Override
             public void onAnimationEnd(Animation animation) {
                 if (isDay){
                     dayNightImageView.setImageResource(R.drawable.moon);
-                    isDay =false;
                     toggleButton.setText("Apagado");
                 }else {
                     dayNightImageView.setImageResource(R.drawable.sun);
-                    isDay = true;
                     toggleButton.setText("Encendido");
+
                 }
+                isDay=!isDay;
+                Animation fadeInAnimation = new AlphaAnimation(0.0f, 1.0f);
+                fadeInAnimation.setDuration(1500); // Duración de la animación de aparición
+                fadeInAnimation.setInterpolator(new DecelerateInterpolator());
+                dayNightImageView.startAnimation(fadeInAnimation);
+                toggleButton.setEnabled(true);
             }
 
             @Override
@@ -130,6 +159,13 @@ public class MainActivity extends AppCompatActivity {
             }
         });
         dayNightImageView.startAnimation(animation);
+
+        ScaleAnimation buttonAnimation = new ScaleAnimation(1, 1.1f, 1, 1.1f,
+                Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+        buttonAnimation.setDuration(300);
+        buttonAnimation.setRepeatCount(1);
+        buttonAnimation.setRepeatMode(Animation.REVERSE);
+        toggleButton.startAnimation(buttonAnimation);
 
     }
 
