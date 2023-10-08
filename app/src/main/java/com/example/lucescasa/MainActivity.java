@@ -24,9 +24,19 @@ import android.view.animation.AlphaAnimation;
 import android.view.animation.Animation;
 import android.widget.ImageView;
 import android.view.animation.DecelerateInterpolator;
+import android.widget.TextView;
+import android.widget.Toast;
+
+
+import java.util.Calendar;
+import java.util.Locale;
+import java.text.SimpleDateFormat;
+import android.os.Handler;
 
 public class MainActivity extends AppCompatActivity {
     private ImageView dayNightImageView, dayNightImageViewBG;
+    private  TextView textViewHora;
+
     private Button toggleButton;
     private boolean isDay = true;
     private RequestQueue rQueue;
@@ -34,6 +44,13 @@ public class MainActivity extends AppCompatActivity {
     String adafruitURL = "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion/data";
     boolean status = true;
     String estadoFoco;
+
+    private static final String HORA_SALIDA_SOL = "06:48";
+    private static final String HORA_PUESTA_SOL = "18:33";
+    private boolean esDeNoche ;
+    private Handler handler = new Handler();
+    private Runnable updateTimeAuto;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -46,13 +63,59 @@ public class MainActivity extends AppCompatActivity {
         dayNightImageView = findViewById(R.id.dayNightImageView);
         toggleButton = findViewById(R.id.toggleButton);
         dayNightImageViewBG = findViewById(R.id.backgroundImageView);
+         textViewHora = findViewById(R.id.textViewHora);
 
         rQueue = Volley.newRequestQueue(this);
         getLastDataFeedIluminacion();
-    
+        setHourTexView();
+        if (esDeNoche) {
+            Toast.makeText(this, "es de noche we", Toast.LENGTH_SHORT).show();
+        } else {
+            Toast.makeText(this, "Es de dia we", Toast.LENGTH_SHORT).show();
+        }
+        updateTimeAuto = new Runnable() {
+            @Override
+            public void run() {
+                setHourTexView();
+                handler.postDelayed(this,1000);
+            }
+        };
+
+         handler.post(updateTimeAuto);
+
     }
 
-    public void getLastDataFeedIluminacion(){
+    public  void setHourTexView(){
+        Calendar calendar = Calendar.getInstance();
+        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        String horaActual = formatoHora.format(calendar.getTime());
+        esDeNoche = esDeNoche(horaActual);
+        textViewHora.setText(horaActual);
+
+    }
+
+    private boolean esDeNoche(String horaActual) {
+        try {
+            SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            Calendar calHoraActual = Calendar.getInstance();
+            Calendar calSalidaSol = Calendar.getInstance();
+            Calendar calPuestaSol = Calendar.getInstance();
+
+            calHoraActual.setTime(formatoHora.parse(horaActual));
+            calSalidaSol.setTime(formatoHora.parse(HORA_SALIDA_SOL));
+            calPuestaSol.setTime(formatoHora.parse(HORA_PUESTA_SOL));
+            return calHoraActual.after(calPuestaSol) || calHoraActual.before(calSalidaSol);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+
+
+
+
+public void getLastDataFeedIluminacion(){
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.GET, "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion", null, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
@@ -61,12 +124,13 @@ public class MainActivity extends AppCompatActivity {
                     int lastData= Integer.parseInt(value);
                     if(lastData == 1){
                         status = true;
+                        dayNightImageView.setImageResource(R.drawable.moon);
+                        dayNightImageViewBG.setImageResource(R.drawable._761719);
                         toggleButton.setText("Encendido");
                     }else{
                         status = false;
                         toggleButton.setText("Apagado");
-                        dayNightImageView.setImageResource(R.drawable.moon);
-                        dayNightImageViewBG.setImageResource(R.drawable._761719);
+
                         isDay = false;
                     }
                 }catch (JSONException error){
@@ -102,13 +166,13 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 if(!isDay){
-                    dayNightImageViewBG.setImageResource(R.drawable._761719);
-                }
-                else{
                     dayNightImageViewBG.setImageResource(R.drawable.cartoon_cloud_sky_background_1_cover);
                 }
+                else{
+                    dayNightImageViewBG.setImageResource(R.drawable._761719);
+                }
                 Animation fadeInAnimationBG = new AlphaAnimation(0.0f, 1.0f);
-                fadeInAnimationBG.setDuration(1500); // Duración de la animación de aparición
+                fadeInAnimationBG.setDuration(2000); // Duración de la animación de aparición
                 fadeInAnimationBG.setInterpolator(new DecelerateInterpolator());
                 dayNightImageView.startAnimation(fadeInAnimationBG);
             }
@@ -138,16 +202,16 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onAnimationEnd(Animation animation) {
                 if (isDay){
-                    dayNightImageView.setImageResource(R.drawable.moon);
-                    toggleButton.setText("Apagado");
-                }else {
-                    dayNightImageView.setImageResource(R.drawable.sun);
-                    toggleButton.setText("Encendido");
+                  dayNightImageView.setImageResource(R.drawable.sun);
+                  toggleButton.setText("Apagado");
 
+                }else {
+                    dayNightImageView.setImageResource(R.drawable.moon);
+                    toggleButton.setText("Encendido");
                 }
                 isDay=!isDay;
                 Animation fadeInAnimation = new AlphaAnimation(0.0f, 1.0f);
-                fadeInAnimation.setDuration(1500); // Duración de la animación de aparición
+                fadeInAnimation.setDuration(2000);
                 fadeInAnimation.setInterpolator(new DecelerateInterpolator());
                 dayNightImageView.startAnimation(fadeInAnimation);
                 toggleButton.setEnabled(true);
@@ -188,7 +252,6 @@ public class MainActivity extends AppCompatActivity {
         JsonObjectRequest request = new JsonObjectRequest(Request.Method.POST, adafruitURL, objeto, new Response.Listener<JSONObject>() {
             @Override
             public void onResponse(JSONObject response) {
-
             }
         }, new Response.ErrorListener() {
             @Override
