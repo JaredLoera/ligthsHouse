@@ -1,11 +1,31 @@
 package com.example.lucescasa;
 
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 
+import android.app.AlarmManager;
+import android.app.Notification;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.content.pm.PackageManager;
+import android.graphics.Color;
+import android.net.ConnectivityManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.os.SystemClock;
+import android.util.Log;
 import android.view.View;
 import android.view.animation.ScaleAnimation;
 import android.widget.Button;
+
 import com.android.volley.Request;
 import com.android.volley.RequestQueue;
 import com.android.volley.Response;
@@ -31,30 +51,44 @@ import android.widget.Toast;
 import java.util.Calendar;
 import java.util.Locale;
 import java.text.SimpleDateFormat;
+
 import android.os.Handler;
+import android.Manifest;
+
 
 public class MainActivity extends AppCompatActivity {
     private ImageView dayNightImageView, dayNightImageViewBG;
-    private  TextView textViewHora;
+    private TextView textViewHora;
 
     private Button toggleButton;
     private boolean isDay = true;
     private RequestQueue rQueue;
-    protected String IoKey ;
+    protected String IoKey;
     String adafruitURL = "https://io.adafruit.com/api/v2/JaredLoera/feeds/iluminacion/data";
     boolean status = true;
     String estadoFoco;
 
-    private static final String HORA_SALIDA_SOL = "06:48";
-    private static final String HORA_PUESTA_SOL = "18:33";
-    private boolean esDeNoche ;
+    private static final String HORA_SALIDA_SOL = "6:48";
+    private static final String HORA_PUESTA_SOL = "6:33";
+    private boolean esDeNoche;
     private Handler handler = new Handler();
     private Runnable updateTimeAuto;
+
+    private AlarmManager alarmMgr;
+    private PendingIntent alarmIntent;
+
+    private static final int NOTIFICATION_ID = 1;
+    private static final String CHANNEL_ID = "alarm_channel";
+
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+
+
 
         ApiKeyManager keysData = new ApiKeyManager();
 
@@ -63,7 +97,13 @@ public class MainActivity extends AppCompatActivity {
         dayNightImageView = findViewById(R.id.dayNightImageView);
         toggleButton = findViewById(R.id.toggleButton);
         dayNightImageViewBG = findViewById(R.id.backgroundImageView);
-         textViewHora = findViewById(R.id.textViewHora);
+        textViewHora = findViewById(R.id.textViewHora);
+
+
+        //area pruebas
+        setAlarm();
+
+
 
         rQueue = Volley.newRequestQueue(this);
         getLastDataFeedIluminacion();
@@ -73,21 +113,49 @@ public class MainActivity extends AppCompatActivity {
         } else {
             Toast.makeText(this, "Es de dia we", Toast.LENGTH_SHORT).show();
         }
+        setAlarm();
         updateTimeAuto = new Runnable() {
             @Override
             public void run() {
                 setHourTexView();
-                handler.postDelayed(this,1000);
+                handler.postDelayed(this, 1000);
             }
         };
 
-         handler.post(updateTimeAuto);
+        handler.post(updateTimeAuto);
+
+    }
+
+
+
+
+
+    public  void setAlarm(){
+        NotificationChannel channel = null;
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.O) {
+            channel = new NotificationChannel(CHANNEL_ID, "Alarma", NotificationManager.IMPORTANCE_DEFAULT);
+        }
+        NotificationManager notificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            notificationManager.createNotificationChannel(channel);
+        }
+
+        AlarmManager alarmManager = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(MainActivity.this, MyBroadcastReceiver.class);
+        PendingIntent pendingIntent = PendingIntent.getBroadcast(MainActivity.this, 0, intent, PendingIntent.FLAG_IMMUTABLE);
+
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.HOUR_OF_DAY, 03);
+        calendar.set(Calendar.MINUTE, 45);
+        long millis = calendar.getTimeInMillis();
+
+        alarmManager.set(AlarmManager.RTC_WAKEUP, SystemClock.elapsedRealtime() + 10000,pendingIntent);
 
     }
 
     public  void setHourTexView(){
         Calendar calendar = Calendar.getInstance();
-        SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm", Locale.getDefault());
+        SimpleDateFormat formatoHora = new SimpleDateFormat("hh:mm", Locale.getDefault());
         String horaActual = formatoHora.format(calendar.getTime());
         esDeNoche = esDeNoche(horaActual);
         textViewHora.setText(horaActual);
@@ -96,7 +164,7 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean esDeNoche(String horaActual) {
         try {
-            SimpleDateFormat formatoHora = new SimpleDateFormat("HH:mm", Locale.getDefault());
+            SimpleDateFormat formatoHora = new SimpleDateFormat("hh:mm", Locale.getDefault());
             Calendar calHoraActual = Calendar.getInstance();
             Calendar calSalidaSol = Calendar.getInstance();
             Calendar calPuestaSol = Calendar.getInstance();
